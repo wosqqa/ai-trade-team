@@ -13,7 +13,7 @@ async function api(path:string,method='GET',body?:unknown){const r=await fetch('
 async function run(fn:()=>Promise<void>){busy.value=true;error.value='';notice.value='';try{await fn()}catch(e){error.value=e instanceof Error?e.message:'连接失败'}finally{busy.value=false}}
 async function refresh(){plans.value=await api('plans');tasks.value=await api('tasks');if(selected.value)selected.value=await api('tasks/'+selected.value.id)}
 function save(){run(async()=>{const p=await api('plans','POST',{name:planName.value,config:cfg.value});planId.value=p.id;await refresh();notice.value='方案已保存至 MySQL，可重复运行或修改后另存'})}
-function choose(){const p=plans.value.find(p=>p.id===planId.value);if(p){cfg.value=structuredClone(p.config);planName.value=p.name}}
+function choose(){const p=plans.value.find(p=>p.id===planId.value);if(p){cfg.value={...p.config,platforms:[...p.config.platforms]};planName.value=p.name}}
 function launch(){run(async()=>{selected.value=await api('tasks','POST',{planId:planId.value,provider:provider.value});await refresh();notice.value=provider.value==='manual'?'已创建导入任务，请添加公开店铺主页和证据':'任务已排队，页面会自动更新'})}
 function open(t:Task){run(async()=>{selected.value=await api('tasks/'+t.id);country.value=t.config.country;expanded.value='';entry.value={name:'',url:'',evidence:''};bulk.value=''})}
 function importEntries(batch=false){run(async()=>{const entries=batch?JSON.parse(bulk.value):[entry.value];if(!Array.isArray(entries))throw new Error('批量内容需为 JSON 数组');const d=await api(`tasks/${selected.value!.id}/import`,'POST',{entries});entry.value={name:'',url:'',evidence:''};bulk.value='';await refresh();notice.value=`新增 ${d.added} 条，跳过重复 ${d.duplicates} 条`})}
