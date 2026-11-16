@@ -20,7 +20,13 @@ for(const [i,j] of [[0,0],[1,0],[2,1],[2,4],[2,5],[3,1],[4,0],[4,1],[5,0],[5,1],
 initial[10]!.features[5]!.status='部分完成';initial[10]!.features[5]!.note='已配置 GitHub Actions；部署及运行监控仍需验证完善。'
 for(const i of [8])for(const f of initial[i]!.features)f.status='后期规划'
 for(const j of [4,5,6])initial[7]!.features[j]!.status='后期规划'
-function restore():Module[]{try{const data=JSON.parse(localStorage.getItem('yt-feature-map-v1')||'null');if(Array.isArray(data)&&data.every(m=>typeof m.name==='string'&&Array.isArray(m.features)))return data}catch{}return initial}
+const socialFeatures=[
+{id:'social-icp',name:'海外中小店主画像与小批量供货匹配',status:'待开发',note:'面向独立店主、社媒卖家和小型零售店；按主营品类、国家、补货需求和 MOQ 匹配。'},
+{id:'social-discovery',name:'社媒店铺发现：Instagram / Facebook / TikTok',status:'待开发',note:'先支持搜索引擎可检索的公开页面和主页链接导入；平台 API 需逐项验证权限，不承诺全站采集。'},
+{id:'social-evidence',name:'社媒店铺资料、经营证据与商务联系方式',status:'待开发',note:'保存账号主页、店铺链接、公开简介、主营产品、来源与采集时间；不推测私密联系方式。'},
+{id:'social-review',name:'跨平台店铺去重、人工审核与 CRM 关联',status:'待开发',note:'根据域名、主页链接和公开商务信息关联；同名账号不自动视为同一店铺。'}]
+initial[2]!.features.push(...socialFeatures)
+function restore():Module[]{try{const data=JSON.parse(localStorage.getItem('yt-feature-map-v1')||'null');if(Array.isArray(data)&&data.every(m=>typeof m.name==='string'&&Array.isArray(m.features))){const module=data.find(m=>m.id==='m2');if(module)for(const f of socialFeatures)if(!module.features.some((x:Feature)=>x.id===f.id))module.features.push({...f});return data}}catch{}return initial}
 const modules=ref<Module[]>(restore()),expanded=ref<string[]>(['m2','m7']),query=ref(''),state=ref('全部状态'),target=ref('m2'),idea=ref(''),feedback=ref('')
 watch(modules,()=>localStorage.setItem('yt-feature-map-v1',JSON.stringify(modules.value)),{deep:true})
 const states=['待开发','原型 / 模拟','部分完成','已完成','后期规划']
