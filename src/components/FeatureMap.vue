@@ -25,6 +25,13 @@ const socialFeatures=[
 {id:'social-discovery',name:'社媒店铺发现：Instagram / Facebook / TikTok',status:'部分完成',note:'主页资料导入与 Brave 搜索适配器已实现；自动搜索待配置密钥和额度。平台内部 API 未接入。'},
 {id:'social-evidence',name:'社媒店铺资料、经营证据与商务联系方式',status:'待开发',note:'保存账号主页、店铺链接、公开简介、主营产品、来源与采集时间；不推测私密联系方式。'},
 {id:'social-review',name:'跨平台店铺去重、人工审核与 CRM 关联',status:'部分完成',note:'同平台主页规范化、重复审核幂等入库和 CRM 来源追溯已实现；不同平台仍需人工判断。'}]
+socialFeatures.push(
+{id:'channel-maps',name:'Google Maps 地图商家获客',status:'待开发',note:'按国家、城市、店铺品类发现实体商家，保存地址、电话、官网与来源；待接入数据服务。'},
+{id:'channel-companies',name:'全球企业库获客',status:'待开发',note:'企业主体、零售 / 批发渠道、规模与商务联系人；待验证服务覆盖、授权和费用。'},
+{id:'channel-linkedin',name:'LinkedIn 企业与负责人线索',status:'待开发',note:'补充店主、创始人、采购岗位的公开职业信息与企业关系；待接入授权来源。'},
+{id:'channel-exhibitions',name:'展会名录获客',status:'待开发',note:'箱包、文具、母婴、礼品展名录；区分参展商、品牌与采购商，保留展会和年份。'},
+{id:'channel-customs',name:'海关采购记录获客',status:'待开发',note:'产品 / HS 编码、进口国、进口商、日期与频次；数据可得性依赖国家和服务覆盖。'}
+)
 initial[2]!.features.push(...socialFeatures)
 function restore():Module[]{try{const data=JSON.parse(localStorage.getItem('yt-feature-map-v1')||'null');if(Array.isArray(data)&&data.every(m=>typeof m.name==='string'&&Array.isArray(m.features))){const module=data.find(m=>m.id==='m2');if(module)for(const f of socialFeatures)if(!module.features.some((x:Feature)=>x.id===f.id))module.features.push({...f});return data}}catch{}return initial}
 const modules=ref<Module[]>(restore()),expanded=ref<string[]>(['m2','m7']),query=ref(''),state=ref('全部状态'),target=ref('m2'),idea=ref(''),feedback=ref('')
