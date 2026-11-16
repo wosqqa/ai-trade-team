@@ -11,7 +11,7 @@
     "dev:all": "concurrently -k \"npm:dev\" \"npm:dev:api\"",
     "db:migrate": "node server/migrate.mjs",
     "test:api": "node server/tests/crm.mjs",
-    "check:api": "node --check server/index.mjs && node --check server/crm.mjs && node --check server/migrate.mjs && node --check server/discovery.mjs && node --check server/discovery-schema.mjs",
+    "check:api": "node --check server/index.mjs && node --check server/crm.mjs && node --check server/migrate.mjs && node --check server/discovery.mjs && node --check server/discovery-schema.mjs && node --check server/enrichment.mjs",
     "test:discovery": "node server/tests/discovery.mjs"
   },
   "dependencies": {

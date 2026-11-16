@@ -12,7 +12,7 @@ try{
  assert.throws(()=>normalize('https://instagram.com.evil.example/shop'));
  assert.throws(()=>normalize('https://instagram.com/p/post'));
  assert.throws(()=>normalize('http://instagram.com/shop'));
- assert.throws(()=>normalize('https://facebook.com/profile.php?id=123'));
+ assert.equal(normalize('https://facebook.com/profile.php?id=123').hash,normalize('https://facebook.com/people/Test/123/').hash);
  assert.equal(assess('Lagos school bag shop',defaults).score,85);
  assert.equal(assess('No evidence',defaults).score,0);
  let r=await api('discovery/plans','POST',{name:'__DISCOVERY_TEST__',config:defaults});assert.equal(r.status,201);plan=r.data.id;
@@ -27,6 +27,18 @@ try{
  assert.equal((await api('customers/'+customers[0]+'/sources')).data.length,1);
  const second=await create('manual');await api(`discovery/tasks/${second}/import`,'POST',{entries:[entry]});const l2=(await api('discovery/tasks/'+second)).data.leads[0];
  assert.equal((await api(`discovery/leads/${l2.id}/review`,'POST',{action:'approve',country:'Nigeria'})).data.customerId,customers[0]);
+ // Contact enrichment uses supplied public-text fixtures, no platform network call.
+ const fixtureEmail=`discovery-${Date.now()}@example.invalid`;const fixturePhone='+999'+String(Date.now()).slice(-10);const fixture=`Nigeria school bag store, contact ${fixtureEmail}, ${fixturePhone}`;
+ const third=await create('manual');await api(`discovery/tasks/${third}/import`,'POST',{entries:[{...entry,url:entry.url+'_other',evidence:fixture}]});
+ const l3=(await api('discovery/tasks/'+third)).data.leads[0];
+ const extracted=await api(`discovery/leads/${l3.id}/extract`,'POST',{text:fixture});assert.equal(extracted.data.phone,fixturePhone);
+ assert.equal((await api(`discovery/leads/${l3.id}/review`,'POST',{action:'approve',country:'Nigeria'})).status,400);
+ assert.equal((await api(`discovery/leads/${l3.id}/contact`,'PUT',{email:fixtureEmail,phone:fixturePhone,whatsapp:fixturePhone,address:'Test only'})).status,200);
+ const approved=await api(`discovery/leads/${l3.id}/review`,'POST',{action:'approve',country:'Nigeria'});assert.equal(approved.status,200);customers.push(approved.data.customerId);
+ const saved=(await api('customers/'+approved.data.customerId)).data;assert.equal(saved.phone,fixturePhone);assert.equal(saved.email,fixtureEmail);
+ const fourth=await create('manual');await api(`discovery/tasks/${fourth}/import`,'POST',{entries:[{...entry,url:entry.url+'_duplicate'}]});const l4=(await api('discovery/tasks/'+fourth)).data.leads[0];
+ await api(`discovery/leads/${l4.id}/contact`,'PUT',{email:fixtureEmail.toUpperCase(),phone:fixturePhone});
+ const merged=await api(`discovery/leads/${l4.id}/review`,'POST',{action:'approve',country:'Nigeria'});assert.equal(merged.data.customerId,approved.data.customerId);assert.equal(merged.data.merged,true);
  const worker=await create('brave');let calls=0;await tick(async()=>{calls++;return [{title:'Mock result',url:`https://${calls===1?'instagram':'facebook'}.com/test_${worker}`,description:'Nigeria school bag shop'}]});
  const done=(await api('discovery/tasks/'+worker)).data;assert.equal(done.status,'completed');assert.equal(done.calls_used,2);assert.equal(done.leads.length,2);
  const failure=await create('brave');await tick(async()=>{throw Object.assign(new Error('Test provider failure'),{status:502})});assert.equal((await api('discovery/tasks/'+failure)).data.status,'failed');

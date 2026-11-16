@@ -78,3 +78,14 @@ Vite 开发代理在服务端注入 `.env` 的 API_TOKEN，令牌不会进入浏
 - `npm run test:discovery` 使用临时方案与线索测试完整流程、幂等与失败恢复，搜索提供方使用测试桩，不调用收费服务，测试结束清理本次数据。请勿并行运行多套后端任务执行器。
 
 接口位于 `/api/discovery`：GET capabilities/plans/tasks、POST plans/tasks、GET tasks/:id、POST tasks/:id/import、POST tasks/:id/retry、POST leads/:id/review。客户来源查询：GET /api/customers/:id/sources。
+
+## 店铺公开联系方式与客户去重
+
+线索详情支持：尝试读取公开主页 → 提取候选邮箱和电话 → 人工核对保存 → 审核入库。直接读取仅访问固定平台 HTTPS 主机，不携带账号、不跟随重定向、不绕过登录或验证码；读取受阻显示原因，可粘贴店铺公开简介提取。搜索任务启用后会对新线索尝试补全公开资料；未找到不等于没有。
+
+- 仅从公开文本提取；不推测邮箱，不把电话自动标为 WhatsApp。地址和 Instagram 由人工核实填写。邮箱、电话未做实际送达或号码归属验证。
+- 客户表新增 phone / whatsapp / address / instagram。CRM 可按邮箱、电话查询，并提供 mailto、tel、wa.me 和主页来源入口。
+- 已核对的联系方式随审核保存到客户表。主页唯一键、统一小写邮箱、国际号码共同查重；匹配同一客户只补空字段，不覆盖已有值。不同依据分别命中多个客户则拒绝自动合并。CRM 新增编辑也检查联系方式冲突。
+- Facebook people/name/id、纯数字主页和 profile.php?id 的同一数字 ID 使用相同唯一键。搜索结果中能明确识别店主路径的 /店名/posts/... 或 /店名/videos/... 会归到对应主页；无法确定店主的帖子不猜测归属。
+- 全局 MySQL advisory lock 串行化客户保存/审核，配合事务避免不同任务同时重复建客户；仅以同名不能自动合并。历史联系方式若不是经本接口规范化保存，应先人工清洗。
+- 新增 API：POST /api/discovery/leads/:id/enrich、POST .../extract（公开文本）、PUT .../contact（人工核对字段）。证据保留在联系资料原文，不保存社媒登录凭据。
