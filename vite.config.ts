@@ -4,5 +4,6 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
+  server: { proxy: { '/api': 'http://127.0.0.1:3001' } },
   base: process.env.VITE_BASE_PATH || '/',
 })
