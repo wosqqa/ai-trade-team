@@ -47,3 +47,21 @@ npm run preview
 COS 使用私有 Bucket 和仅限目标目录的子账号权限，支持 PNG/JPEG/PDF（10MB），后端生成对象 Key，返回 5 分钟签名预览 URL。文件 Key 后续需关联产品或附件表；当前验证接口尚未建立业务关联。COS 配置状态不代表真实上传已通过。不要将 Bucket 改成公开读写。
 
 GitHub Pages 仍为模拟前端展示，不提供本地 API。服务器连接、COS 验证需在 Mac 本地环境完成。
+
+COS 上传目录使用 `COS_PREFIX=trade`，对象路径为 `trade/日期/随机文件名`。`COS_CUSTOM_DOMAIN` 仅预留配置，当前仍使用 COS 签名链接，未启用自定义域名访问。
+
+## 真实 CRM（本地开发）
+
+先执行 `npm run db:migrate`，再执行 `npm run dev:all`。客户 CRM 菜单已切换为真实 MySQL 数据，工作台及独立演示跟进中心仍为模拟数据。不会自动导入演示客户。
+
+Vite 开发代理在服务端注入 `.env` 的 API_TOKEN，令牌不会进入浏览器构建产物。更改令牌后须重启 Vite。API 仅监听回环地址，当前不是多用户登录系统，不能直接作为公网服务。
+
+接口：
+- GET /api/customers?q=&stage=&page=：分页（每页 20 条），返回 items/total/page/pageSize。
+- POST /api/customers：创建客户；PUT /api/customers/:id：完整编辑；GET /api/customers/:id：详情。
+- GET/POST /api/customers/:id/contacts：联系人列表与新增。
+- GET/POST /api/customers/:id/followups：跟进列表与新增。
+
+字段校验、参数化 SQL、不存在客户 404 和错误提示已实现。联系人和跟进通过外键关联客户；不提供删除客户接口，避免误删业务资产。迁移可重复执行，只新增不存在的 yt_ 表，不修改既有其他表。
+
+`npm run test:api` 使用配置的真实数据库进行集成验证，临时启动 3107 端口，创建带 __API_TEST_ 前缀的客户，测试后仅清理此次创建的数据。此命令不在 CI 自动执行，避免 CI 访问生产凭据。
