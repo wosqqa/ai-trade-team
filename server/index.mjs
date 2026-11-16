@@ -1,4 +1,5 @@
 import express from 'express';
+import {maps,startMaps} from './maps.mjs';
 import {closeLocalBrowser} from './browser-search.mjs';
 import {enrichment} from './enrichment.mjs';
 import {discovery,startDiscovery} from './discovery.mjs';
@@ -16,10 +17,11 @@ app.use('/api',(req,res,next)=>{const token=process.env.API_TOKEN;const supplied
 app.use('/api',crm);
 app.use('/api/discovery',discovery);
 app.use('/api/discovery',enrichment);
+app.use('/api/maps',maps);
 const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:10*1024*1024,files:1}});
 app.post('/api/files',upload.single('file'),async(req,res)=>{if(!cos)return res.status(503).json({error:'COS 尚未配置'});const file=req.file;if(!file)return res.status(400).json({error:'请选择文件'});const b=file.buffer;const ext=b.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))?'png':b[0]===255&&b[1]===216&&b[2]===255?'jpg':b.subarray(0,5).toString()==='%PDF-'?'pdf':null;if(!ext)return res.status(400).json({error:'仅支持 PNG、JPEG、PDF'});const prefix=(process.env.COS_PREFIX||'trade').replace(/^\/+|\/+$/g,'');const Key=`${prefix}/${new Date().toISOString().slice(0,10)}/${randomUUID()}.${ext}`;await cos.putObject({Bucket:process.env.COS_BUCKET,Region:process.env.COS_REGION,Key,Body:b,ContentType:ext==='pdf'?'application/pdf':`image/${ext==='jpg'?'jpeg':'png'}`});const url=cos.getObjectUrl({Bucket:process.env.COS_BUCKET,Region:process.env.COS_REGION,Key,Sign:true,Expires:300});res.status(201).json({key:Key,url,expiresIn:300})});
 app.use((err,req,res,next)=>{console.error('API error:',err.code||err.name);res.status(err.status|| (err instanceof multer.MulterError?400:500)).json({error:err.status?err.message:'操作失败，请检查服务配置或输入；未切换为模拟数据'})});
 const server=app.listen(Number(process.env.API_PORT||3001),'127.0.0.1',()=>console.log('悦拓 API: http://127.0.0.1:3001'));
 process.on('SIGTERM',()=>server.close(async()=>{await closeLocalBrowser();await pool?.end();process.exit()}));
 
-if(process.env.DISCOVERY_WORKER!=='false')startDiscovery();
+if(process.env.DISCOVERY_WORKER!=='false'){startDiscovery();startMaps()}

@@ -39,9 +39,9 @@ try{
  const fourth=await create('manual');await api(`discovery/tasks/${fourth}/import`,'POST',{entries:[{...entry,url:entry.url+'_duplicate'}]});const l4=(await api('discovery/tasks/'+fourth)).data.leads[0];
  await api(`discovery/leads/${l4.id}/contact`,'PUT',{email:fixtureEmail.toUpperCase(),phone:fixturePhone});
  const merged=await api(`discovery/leads/${l4.id}/review`,'POST',{action:'approve',country:'Nigeria'});assert.equal(merged.data.customerId,approved.data.customerId);assert.equal(merged.data.merged,true);
- const worker=await create('brave');let calls=0;await tick(async()=>{calls++;return [{title:'Mock result',url:`https://${calls===1?'instagram':'facebook'}.com/test_${worker}`,description:'Nigeria school bag shop'}]});
- const done=(await api('discovery/tasks/'+worker)).data;assert.equal(done.status,'completed');assert.equal(done.calls_used,2);assert.equal(done.leads.length,2);
- const failure=await create('brave');await tick(async()=>{throw Object.assign(new Error('Test provider failure'),{status:502})});assert.equal((await api('discovery/tasks/'+failure)).data.status,'failed');
+ const untouched=await create('brave');const worker=await create('brave');let calls=0;await tick(async()=>{calls++;return [{title:'Mock result',url:`https://${calls===1?'instagram':'facebook'}.com/test_${worker}`,description:'Nigeria school bag shop'}]},worker);
+ assert.equal((await api('discovery/tasks/'+untouched)).data.status,'queued');const done=(await api('discovery/tasks/'+worker)).data;assert.equal(done.status,'completed');assert.equal(done.calls_used,2);assert.equal(done.leads.length,2);
+ const failure=await create('brave');await tick(async()=>{throw Object.assign(new Error('Test provider failure'),{status:502})},failure);assert.equal((await api('discovery/tasks/'+failure)).data.status,'failed');
  console.log('PASS: plan/task persistence, URL validation, scoring, deduplication, review idempotency, cross-task CRM link, evidence, mock worker success/failure. No search service called.');
 }finally{
  for(const id of tasks)await pool.execute('DELETE FROM yt_prospect_leads WHERE task_id=?',[id]);
